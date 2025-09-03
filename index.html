@@ -1,0 +1,437 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KaNcy AI</title>
+  <style>
+    :root{
+      --bg:#0b0b0f;           /* near-black */
+      --panel:#111218;        /* panels */
+      --gold:#D4AF37;         /* KaNcy gold */
+      --gold-soft: rgba(212,175,55,.35);
+      --red:#ff3b30;          /* iOS red */
+      --red-soft: rgba(255,59,48,.35);
+      --text:#eaeaf2;         /* light text */
+      --muted:#9aa1b5;        /* muted text */
+      --accent:#1f2937;       /* borders */
+    }*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:radial-gradient(1200px 800px at 70% -10%, rgba(212,175,55,0.08), transparent 60%),
+  radial-gradient(800px 600px at -10% 110%, rgba(255,59,48,0.06), transparent 60%), var(--bg);
+  color:var(--text); font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+  overflow:hidden; /* prevent body scroll */
+}
+
+/* ===== Topbar (fixed/static) ===== */
+.topbar{
+  position:fixed; inset:0 0 auto 0; height:56px; display:flex; align-items:center; gap:12px;
+  padding:10px 12px; background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
+  border-bottom:1px solid rgba(255,255,255,.06); backdrop-filter: blur(6px);
+  z-index:50;
+}
+.btn{border:1px solid rgba(255,255,255,.1); background:var(--panel); color:var(--text); padding:8px 12px; border-radius:14px; cursor:pointer}
+.btn:active{transform:translateY(1px)}
+.ghost{background:transparent}
+.icon{display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center}
+
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px}
+.brand .dot{width:10px; height:10px; border-radius:50%; background:var(--gold); box-shadow:0 0 12px var(--gold), 0 0 30px var(--gold-soft)}
+
+/* ===== Layout ===== */
+.wrap{position: absolute; inset:56px 0 0 0; display:grid; grid-template-columns: 1fr;}
+
+/* ===== Sidebar ===== */
+.sidebar{position:fixed; top:56px; left:0; bottom:0; width:290px; background:linear-gradient(180deg, #0d0e12, #0a0b0f);
+  border-right:1px solid rgba(255,255,255,.06); transform: translateX(-100%);
+  transition: transform .25s ease; z-index:60; display:flex; flex-direction:column;}
+.sidebar.open{transform: translateX(0)}
+.side-header{padding:12px; display:flex; gap:8px; align-items:center; border-bottom:1px solid rgba(255,255,255,.06)}
+.new-chat{flex:1; background:transparent; border:1px dashed var(--gold); color:var(--gold); padding:10px 12px; border-radius:14px; cursor:pointer;
+  box-shadow: 0 0 8px var(--gold-soft) inset;}
+.history-label{margin:12px; text-align:center; color:var(--muted); font-size:12px; letter-spacing:2px}
+.history-list{flex:1; overflow:auto; padding:8px 8px 12px}
+.history-item{padding:10px 12px; margin:6px 4px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:#0f1117; cursor:pointer}
+.history-item.active{border-color:var(--gold); box-shadow:0 0 8px var(--gold-soft)}
+.history-empty{color:var(--muted); text-align:center; padding:12px}
+.side-footer{padding:10px 12px; border-top:1px solid rgba(255,255,255,.06); color:var(--muted); font-size:13px}
+
+/* Swipe hint area on the very left */
+.swipe-zone{position:fixed; top:56px; bottom:0; left:0; width:24px; z-index:55}
+
+/* ===== Chat ===== */
+.chat{height:calc(100dvh - 56px - 70px); overflow:auto; padding:14px 14px 24px; scroll-behavior:smooth}
+.msg{max-width:820px; margin:12px auto; display:flex; gap:10px; align-items:flex-start}
+.bubble{padding:12px 14px; border-radius:14px; background: #0f1117; border:1px solid rgba(255,255,255,.08); position:relative}
+
+/* Gold glowing frame for USER */
+.user .bubble{border-color:var(--gold); box-shadow: 0 0 12px var(--gold-soft), 0 0 30px var(--gold-soft) inset}
+.user .avatar{background:var(--gold)}
+
+/* Red glowing edge for AI */
+.ai .bubble{border-color:var(--red); box-shadow: 0 0 12px var(--red-soft), 0 0 30px var(--red-soft) inset}
+.ai .avatar{background:var(--red)}
+
+.avatar{flex:0 0 28px; height:28px; border-radius:50%; box-shadow:0 0 10px rgba(255,255,255,.15)}
+.meta{font-size:12px; color:var(--muted); margin-bottom:6px}
+.content{white-space:pre-wrap}
+
+/* ===== Composer ===== */
+.composer{position:fixed; left:0; right:0; bottom:0; height:70px; display:flex; align-items:center; gap:8px; padding:10px 12px; background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.6)); border-top:1px solid rgba(255,255,255,.06)}
+.field{max-width:900px; margin:0 auto; width:100%; display:flex; align-items:center; gap:8px; background:#0f1117; border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:6px 8px}
+.input{flex:1; background: #fff; color:#000; border:none; outline:none; padding:10px 12px; border-radius:12px; box-shadow: 0 0 8px rgba(212,175,55,.65), 0 0 0 2px rgba(212,175,55,.35) inset}
+.action{background:#0f1117; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:8px; cursor:pointer}
+
+/* Right upload just before Send */
+.send{padding:10px 14px; border-radius:12px; background:linear-gradient(180deg, #1a1b21, #10121a); border:1px solid rgba(255,255,255,.14)}
+
+/* ===== Login ===== */
+.screen{position:absolute; inset:0; display:grid; place-items:center}
+.card{width:min(440px, 92vw); background: #0f1117; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px}
+.card h2{margin:0 0 12px 0}
+.row{display:flex; gap:10px}
+.row input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background:#0d0f15; color:var(--text)}
+.row input::placeholder{color:#7a8297}
+.row .go{background:linear-gradient(90deg, rgba(212,175,55,.15), rgba(212,175,55,.05)); color:var(--gold); border:1px dashed var(--gold); border-radius:12px}
+
+/* Overlay when sidebar is open (mobile) */
+.overlay{position:fixed; inset:56px 0 0 0; background:rgba(0,0,0,.35); backdrop-filter: blur(2px); display:none; z-index:58}
+.overlay.show{display:block}
+
+/* Responsive tweaks */
+@media (min-width:980px){
+  .sidebar{transform: translateX(0)}
+  .overlay{display:none !important}
+  .wrap{grid-template-columns:290px 1fr}
+  .chat{height:calc(100dvh - 56px - 70px); margin-left:290px}
+  .swipe-zone{display:none}
+}
+
+.action, .send {
+  font-size: 22px;   /* bigger emoji/icon */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#voiceBtn.recording {
+  color: red;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0% { text-shadow: 0 0 5px red; }
+  50% { text-shadow: 0 0 20px red; }
+  100% { text-shadow: 0 0 5px red; }
+}
+
+  </style>
+</head>
+<body>
+  <!-- ===== Top Bar ===== -->
+  <header class="topbar">
+    <button id="openSidebar" class="btn ghost" aria-label="Open sidebar" title="Sidebar">
+      <span class="icon">☰</span>
+    </button>
+    <div class="brand"><span class="dot"></span> <span>KaNcy AI</span></div>
+  </header>  <!-- ===== Sidebar + Overlay ===== -->  <aside id="sidebar" class="sidebar" aria-label="Sidebar">
+    <div class="side-header">
+      <button id="newChatBtn" class="new-chat">＋ New Chat</button>
+    </div>
+    <div class="history-label">-------HISTORY------- <span id="histCount" style="font-size:11px;color:var(--gold)"></span></div>
+    <div id="history" class="history-list"></div>
+    <div class="side-footer">Signed in as <strong id="usernameFoot">—</strong></div>
+  </aside>
+  <div id="overlay" class="overlay"></div>
+  <div class="swipe-zone" id="swipeZone"></div>  <!-- ===== Main App ===== -->  <main class="wrap" id="app" hidden>
+    <section id="chat" class="chat" aria-live="polite"></section>
+  </main>  <!-- ===== Composer ===== -->  <footer class="composer" id="composer" hidden>
+    <div class="field">
+      <!-- Left upload button -->
+      <button class="action" id="uploadLeft" title="Upload (left)">💾</button>
+      <input id="prompt" class="input" placeholder="Type your message..." />
+      <!-- Right upload button (before send) -->
+      <button class="action" id="voiceBtn" title="Voice Input">🗣️</button>
+      <button class="send btn" id="send">Send</button>
+      <input type="file" id="fileInputLeft" multiple hidden />
+      <input type="file" id="fileInputRight" multiple hidden />
+    </div>
+  </footer>  <!-- ===== Login Screen ===== -->  <section id="login" class="screen">
+    <div class="card">
+      <h2>Welcome to <span style="color:var(--gold)">KaNcy</span> AI</h2>
+      <p style="color:var(--muted); margin-top:0">Sign in to sync your chats on this device.</p>
+      <div class="row" style="margin:10px 0 8px">
+        <input id="loginName" placeholder="Username (shown in sidebar)" />
+      </div>
+      <div class="row">
+        <button id="loginBtn" class="btn go">Continue ▸</button>
+      </div>
+    </div>
+  </section>  
+  <script>
+  // ====== Simple SPA State ======
+const els = {
+  app: document.getElementById('app'),
+  chat: document.getElementById('chat'),
+  composer: document.getElementById('composer'),
+  prompt: document.getElementById('prompt'),
+  send: document.getElementById('send'),
+  login: document.getElementById('login'),
+  loginBtn: document.getElementById('loginBtn'),
+  loginName: document.getElementById('loginName'),
+  sidebar: document.getElementById('sidebar'),
+  overlay: document.getElementById('overlay'),
+  openSidebar: document.getElementById('openSidebar'),
+  newChatBtn: document.getElementById('newChatBtn'),
+  history: document.getElementById('history'),
+  histCount: document.getElementById('histCount'),
+  usernameFoot: document.getElementById('usernameFoot'),
+  uploadLeft: document.getElementById('uploadLeft'),
+  fileInputLeft: document.getElementById('fileInputLeft'),
+  fileInputRight: document.getElementById('fileInputRight'),
+  swipeZone: document.getElementById('swipeZone'),
+  voiceBtn: document.getElementById('voiceBtn'), // ✅ add this
+};
+
+  const store = {
+    get username(){ return localStorage.getItem('kancy_username') || '' },
+    set username(v){ localStorage.setItem('kancy_username', v) },
+    get conversations(){ return JSON.parse(localStorage.getItem('kancy_convos')||'[]') },
+    set conversations(v){ localStorage.setItem('kancy_convos', JSON.stringify(v)) },
+    get activeId(){ return localStorage.getItem('kancy_active') },
+    set activeId(v){ localStorage.setItem('kancy_active', v) },
+  };
+
+  function uid(){ return Math.random().toString(36).slice(2,10) }
+
+  // ====== Conversations ======
+  function createConversation(){
+    const id = uid();
+    const conv = { id, title: 'New chat', messages: [] };
+    const list = store.conversations; list.unshift(conv); store.conversations = list; store.activeId = id;
+    renderHistory();
+    els.chat.innerHTML = '';
+    return conv;
+  }
+  function getActive(){ return store.conversations.find(c=>c.id===store.activeId) }
+  function saveActive(conv){ const list = store.conversations.map(c=> c.id===conv.id? conv : c); store.conversations = list }
+
+  function renderHistory(){
+    const list = store.conversations;
+    els.history.innerHTML = '';
+    if(!list.length){
+      els.history.innerHTML = `<div class="history-empty">No chats yet</div>`;
+    } else {
+      for(const c of list){
+        const div = document.createElement('div');
+        div.className = 'history-item' + (c.id===store.activeId?' active':'');
+        div.textContent = c.title;
+        div.onclick = ()=>{ store.activeId = c.id; loadConversation(c.id) };
+        els.history.appendChild(div);
+      }
+    }
+    els.histCount.textContent = list.length? `(${list.length})` : '';
+  }
+
+  function loadConversation(id){
+    const conv = store.conversations.find(c=>c.id===id); if(!conv) return;
+    els.chat.innerHTML = '';
+    for(const m of conv.messages) appendMessage(m.role, m.text, m.files);
+    renderHistory();
+    closeSidebar();
+  }
+
+  // ====== UI helpers ======
+  function appendMessage(role, text, files){
+    const row = document.createElement('div');
+    row.className = 'msg ' + (role==='user'? 'user' : 'ai');
+
+    const avatar = document.createElement('div'); avatar.className='avatar';
+    const wrap = document.createElement('div');
+    const meta = document.createElement('div'); meta.className='meta'; meta.textContent = role==='user'? (store.username || 'You') : 'KaNcy AI';
+    const bubble = document.createElement('div'); bubble.className='bubble';
+    const content = document.createElement('div'); content.className='content'; content.textContent = text;
+
+    bubble.appendChild(meta); bubble.appendChild(content);
+    if(files && files.length){
+      const list = document.createElement('div'); list.style.marginTop='8px'; list.style.fontSize='12px'; list.style.opacity='.9';
+      for(const f of files){
+        const item = document.createElement('div');
+        item.textContent = `💾 ${f.name} (${Math.round(f.size/1024)} KB)`;
+        list.appendChild(item);
+      }
+      bubble.appendChild(list);
+    }
+
+    wrap.appendChild(bubble); row.appendChild(avatar); row.appendChild(wrap);
+    els.chat.appendChild(row);
+    els.chat.scrollTop = els.chat.scrollHeight;
+  }
+
+  // ====== Mock AI + API hook ======
+async function sendToAI(text){
+  try {
+    const resp = await fetch("/.netlify/functions/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message: text })
+});
+
+    if (!resp.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const data = await resp.json();
+    return data.reply;  // reply comes from backend
+  } catch (err) {
+    console.error("AI request failed:", err);
+    return "⚠️ Failed to connect to AI. Please try again.";
+  }
+}
+
+  // ====== Send flow ======
+  async function handleSend(extraFiles){
+    const text = els.prompt.value.trim();
+    const files = extraFiles || [];
+    if(!text && !files.length) return;
+
+    let conv = getActive();
+    if(!conv) conv = createConversation();
+
+    // first message becomes title
+    if(conv.messages.length===0 && text){ conv.title = text.slice(0, 40) + (text.length>40?'…':'') }
+
+    // push user message
+    const userMsg = { role:'user', text: text || (files.length? '(sent files)' : ''), files: files.map(f=>({name:f.name, size:f.size})) };
+    conv.messages.push(userMsg); saveActive(conv);
+    appendMessage('user', userMsg.text, userMsg.files);
+    els.prompt.value='';
+
+    // AI thinking
+    const aiText = await sendToAI(text || '');
+    const aiMsg = { role:'ai', text: aiText, files: [] };
+    conv.messages.push(aiMsg); saveActive(conv);
+    appendMessage('ai', aiText);
+    renderHistory();
+  }
+
+  // ====== Sidebar open/close ======
+  function openSidebar(){ els.sidebar.classList.add('open'); els.overlay.classList.add('show') }
+  function closeSidebar(){ els.sidebar.classList.remove('open'); els.overlay.classList.remove('show') }
+
+// ====== Auth ======
+function enterApp(){
+  // hide login
+  els.login.style.display = "none";
+
+  // show app
+  els.app.hidden = false;
+  els.composer.hidden = false;
+
+  // set username in footer
+  els.usernameFoot.textContent = store.username || '—';
+
+  // render history + conversations
+  renderHistory();
+  if(!store.conversations.length) createConversation();
+}
+
+els.loginBtn.addEventListener('click', ()=>{
+  const name = (els.loginName.value || '').trim();
+  if(!name){ 
+    alert('Enter a username'); 
+    return;
+  }
+  store.username = name;        // save username
+  enterApp();                   // open app
+});
+
+  // ====== Events ======
+  els.loginBtn.addEventListener('click', ()=>{
+    const name = (els.loginName.value||'').trim();
+    if(!name){ alert('Enter a username'); return }
+    store.username = name; enterApp();
+  });
+
+  els.openSidebar.addEventListener('click', openSidebar);
+  els.overlay.addEventListener('click', closeSidebar);
+  els.newChatBtn.addEventListener('click', ()=>{ createConversation(); closeSidebar(); els.prompt.focus() });
+
+  els.send.addEventListener('click', ()=> handleSend([]));
+  els.prompt.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleSend([]) } });
+  
+
+  // Dual upload triggers
+  els.uploadLeft.addEventListener('click', ()=> els.fileInputLeft.click());
+  function filesToArray(fileList){ return Array.from(fileList || []) }
+  els.fileInputLeft.addEventListener('change', (e)=>{ const files = filesToArray(e.target.files); if(files.length) handleSend(files) });
+  
+  // ====== Voice Input ======
+let recognition;
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    els.prompt.value += (els.prompt.value ? ' ' : '') + transcript;
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Voice input error:", event.error);
+    alert("Voice input failed: " + event.error);
+  };
+}
+
+els.voiceBtn.addEventListener('click', ()=>{
+  if(!recognition){
+    alert("Voice input not supported in this browser.");
+    return;
+  }
+
+  if(els.voiceBtn.classList.contains("recording")){
+    recognition.stop();
+    els.voiceBtn.classList.remove("recording");
+    els.voiceBtn.textContent = "🗣️";
+  } else {
+    recognition.start();
+    els.voiceBtn.classList.add("recording");
+    els.voiceBtn.textContent = "🗣️";
+  }
+});
+
+  // Swipe gestures (open from left edge, close by swiping left)
+  let touchStartX = null, touchStartY = null, touchingSidebar = false;
+  function onTouchStart(e){
+    const t = e.touches[0];
+    touchStartX = t.clientX; touchStartY = t.clientY;
+    // start if in left edge zone or sidebar is already open
+    if(t.clientX < 24 || els.sidebar.classList.contains('open')) touchingSidebar = true;
+  }
+  function onTouchMove(e){
+    if(!touchingSidebar) return;
+    const t = e.touches[0]; const dx = t.clientX - touchStartX; const dy = t.clientY - touchStartY;
+    if(Math.abs(dx) < Math.abs(dy)) return; // ignore vertical scrolls
+    if(!els.sidebar.classList.contains('open') && dx > 40){ openSidebar(); touchingSidebar=false }
+    if(els.sidebar.classList.contains('open') && dx < -40){ closeSidebar(); touchingSidebar=false }
+  }
+  function onTouchEnd(){ touchingSidebar=false }
+
+  els.swipeZone.addEventListener('touchstart', onTouchStart, {passive:true});
+  els.swipeZone.addEventListener('touchmove', onTouchMove, {passive:true});
+  els.swipeZone.addEventListener('touchend', onTouchEnd);
+  // Also allow swiping anywhere when sidebar is open
+  document.addEventListener('touchstart', onTouchStart, {passive:true});
+  document.addEventListener('touchmove', onTouchMove, {passive:true});
+  document.addEventListener('touchend', onTouchEnd);
+
+// ====== Init ======
+(function init(){
+  if(store.username){ 
+    enterApp();                 // skip login if saved
+  } else {
+    els.login.style.display = "flex";  // show login popup
+  }
+})();
