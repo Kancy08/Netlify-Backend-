@@ -114,15 +114,16 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
-}
-#voiceBtn.recording {
-  color: red;
-  animation: pulse 1s infinite;
+  
 }
 @keyframes pulse {
   0% { text-shadow: 0 0 5px red; }
   50% { text-shadow: 0 0 20px red; }
   100% { text-shadow: 0 0 5px red; }
+}
+
+#login { 
+  display: none;  /* Hide login popup until script shows it */
 }
 
   </style>
@@ -151,10 +152,8 @@ body{
       <button class="action" id="uploadLeft" title="Upload (left)">💾</button>
       <input id="prompt" class="input" placeholder="Type your message..." />
       <!-- Right upload button (before send) -->
-      <button class="action" id="voiceBtn" title="Voice Input">🗣️</button>
       <button class="send btn" id="send">Send</button>
       <input type="file" id="fileInputLeft" multiple hidden />
-      <input type="file" id="fileInputRight" multiple hidden />
     </div>
   </footer>  <!-- ===== Login Screen ===== -->  <section id="login" class="screen">
     <div class="card">
@@ -188,7 +187,6 @@ const els = {
   usernameFoot: document.getElementById('usernameFoot'),
   uploadLeft: document.getElementById('uploadLeft'),
   fileInputLeft: document.getElementById('fileInputLeft'),
-  fileInputRight: document.getElementById('fileInputRight'),
   swipeZone: document.getElementById('swipeZone'),
   voiceBtn: document.getElementById('voiceBtn'), // ✅ add this
 };
@@ -347,12 +345,6 @@ els.loginBtn.addEventListener('click', ()=>{
 });
 
   // ====== Events ======
-  els.loginBtn.addEventListener('click', ()=>{
-    const name = (els.loginName.value||'').trim();
-    if(!name){ alert('Enter a username'); return }
-    store.username = name; enterApp();
-  });
-
   els.openSidebar.addEventListener('click', openSidebar);
   els.overlay.addEventListener('click', closeSidebar);
   els.newChatBtn.addEventListener('click', ()=>{ createConversation(); closeSidebar(); els.prompt.focus() });
@@ -366,41 +358,7 @@ els.loginBtn.addEventListener('click', ()=>{
   function filesToArray(fileList){ return Array.from(fileList || []) }
   els.fileInputLeft.addEventListener('change', (e)=>{ const files = filesToArray(e.target.files); if(files.length) handleSend(files) });
   
-  // ====== Voice Input ======
-let recognition;
-if ('webkitSpeechRecognition' in window) {
-  recognition = new webkitSpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.lang = 'en-US';
 
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    els.prompt.value += (els.prompt.value ? ' ' : '') + transcript;
-  };
-
-  recognition.onerror = function(event) {
-    console.error("Voice input error:", event.error);
-    alert("Voice input failed: " + event.error);
-  };
-}
-
-els.voiceBtn.addEventListener('click', ()=>{
-  if(!recognition){
-    alert("Voice input not supported in this browser.");
-    return;
-  }
-
-  if(els.voiceBtn.classList.contains("recording")){
-    recognition.stop();
-    els.voiceBtn.classList.remove("recording");
-    els.voiceBtn.textContent = "🗣️";
-  } else {
-    recognition.start();
-    els.voiceBtn.classList.add("recording");
-    els.voiceBtn.textContent = "🗣️";
-  }
-});
 
   // Swipe gestures (open from left edge, close by swiping left)
   let touchStartX = null, touchStartY = null, touchingSidebar = false;
