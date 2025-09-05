@@ -188,15 +188,17 @@ const els = {
   uploadLeft: document.getElementById('uploadLeft'),
   fileInputLeft: document.getElementById('fileInputLeft'),
   swipeZone: document.getElementById('swipeZone'),
+}; // ✅ CLOSE els object here
 
-  const store = {
-    get username(){ return localStorage.getItem('kancy_username') || '' },
-    set username(v){ localStorage.setItem('kancy_username', v) },
-    get conversations(){ return JSON.parse(localStorage.getItem('kancy_convos')||'[]') },
-    set conversations(v){ localStorage.setItem('kancy_convos', JSON.stringify(v)) },
-    get activeId(){ return localStorage.getItem('kancy_active') },
-    set activeId(v){ localStorage.setItem('kancy_active', v) },
-  };
+// ====== Persistent store ======
+const store = {
+  get username() { return localStorage.getItem('kancy_username') || '' },
+  set username(v) { localStorage.setItem('kancy_username', v) },
+  get conversations() { return JSON.parse(localStorage.getItem('kancy_convos') || '[]') },
+  set conversations(v) { localStorage.setItem('kancy_convos', JSON.stringify(v)) },
+  get activeId() { return localStorage.getItem('kancy_active') },
+  set activeId(v) { localStorage.setItem('kancy_active', v) },
+};
 
   function uid(){ return Math.random().toString(36).slice(2,10) }
 
